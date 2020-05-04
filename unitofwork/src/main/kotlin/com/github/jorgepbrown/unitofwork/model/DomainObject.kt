@@ -7,16 +7,15 @@ abstract class DomainObject {
         markNew()
     }
 
-    protected fun markNew() {
+    fun markNew() {
         UnitOfWork.current.registerNew(this)
     }
 
-    protected fun markModified() {
+    fun markModified() {
         UnitOfWork.current.registerDirty(this)
     }
 
-    protected fun markDeleted() {
+    fun markDeleted() {
         UnitOfWork.current.registerDeleted(this)
     }
-
 }

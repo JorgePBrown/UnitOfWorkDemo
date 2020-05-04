@@ -15,4 +15,10 @@ class Clazz(
         markModified()
         students.add(student)
     }
+
+    fun removeStudent(student: Student) {
+        markModified()
+        students.remove(student)
+        student.markDeleted()
+    }
 }

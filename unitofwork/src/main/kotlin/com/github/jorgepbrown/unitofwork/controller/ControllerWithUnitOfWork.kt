@@ -20,6 +20,7 @@ class ControllerWithUnitOfWork {
             val classMapper = it.getMapper(Clazz::class.java)
 
             val teacher = Teacher(teacherName)
+
             val klass = classMapper.find(classId)
 
             klass.teacher = teacher

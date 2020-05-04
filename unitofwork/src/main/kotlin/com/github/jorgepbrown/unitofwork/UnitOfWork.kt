@@ -1,30 +1,33 @@
 package com.github.jorgepbrown.unitofwork
 
 import com.github.jorgepbrown.unitofwork.context.DbContext
-import com.github.jorgepbrown.unitofwork.model.Clazz
-import com.github.jorgepbrown.unitofwork.model.Course
-import com.github.jorgepbrown.unitofwork.model.DomainObject
-import com.github.jorgepbrown.unitofwork.model.Student
+import com.github.jorgepbrown.unitofwork.model.*
 
 private val INSERTION_ORDER = listOf(
     Course::class.java,
-    Clazz::class.java,
-    Student::class.java
+    Teacher::class.java,
+    Student::class.java,
+    Clazz::class.java
 )
 
 class UnitOfWork {
-    companion object {
-        private val units: ThreadLocal<UnitOfWork> = ThreadLocal()
-        fun new() {
-            units.set(UnitOfWork())
+    private fun work(
+        getMapper: (Class<out DomainObject>) -> DomainObjectMapper<DomainObject>,
+        objects: List<DomainObject>,
+        order: List<Class<out DomainObject>>,
+        map: DomainObjectMapper<DomainObject>.(DomainObject) -> Unit
+    ) {
+        val groupedByClassObjects = objects.groupBy {
+            it::class.java
         }
 
-        fun remove() {
-            units.set(null) // Remove reference so garbage collector can collect it
-        }
+        order.forEach { type ->
+            val objectsOfSameType = groupedByClassObjects[type]
 
-        val current: UnitOfWork
-            get() = units.get()
+            objectsOfSameType?.forEach {
+                getMapper(type).map(it)
+            }
+        }
     }
 
     private val created = mutableListOf<DomainObject>()
@@ -64,7 +67,22 @@ class UnitOfWork {
         }
     }
 
-    fun insert(getMapper: (Class<out DomainObject>) -> DomainObjectMapper<in DomainObject>) {
+    companion object {
+        private val units: ThreadLocal<UnitOfWork> = ThreadLocal()
+
+        fun new() {
+            units.set(UnitOfWork())
+        }
+
+        fun remove() {
+            units.set(null)
+        }
+
+        val current: UnitOfWork
+            get() = units.get()
+    }
+
+    private fun insert(getMapper: (Class<out DomainObject>) -> DomainObjectMapper<in DomainObject>) {
         work(
             getMapper,
             created,
@@ -73,7 +91,7 @@ class UnitOfWork {
         )
     }
 
-    fun update(getMapper: (Class<out DomainObject>) -> DomainObjectMapper<DomainObject>) {
+    private fun update(getMapper: (Class<out DomainObject>) -> DomainObjectMapper<DomainObject>) {
         work(
             getMapper,
             modified,
@@ -82,31 +100,12 @@ class UnitOfWork {
         )
     }
 
-    fun delete(getMapper: (Class<out DomainObject>) -> DomainObjectMapper<DomainObject>) {
+    private fun delete(getMapper: (Class<out DomainObject>) -> DomainObjectMapper<DomainObject>) {
         work(
             getMapper,
             deleted,
             INSERTION_ORDER.reversed(),
             DomainObjectMapper<DomainObject>::delete
         )
-    }
-
-    private fun work(
-        getMapper: (Class<out DomainObject>) -> DomainObjectMapper<in DomainObject>,
-        objects: List<DomainObject>,
-        order: List<Class<out DomainObject>>,
-        map: DomainObjectMapper<DomainObject>.(DomainObject) -> Unit
-    ) {
-        val groupedByClassObjects = objects.groupBy {
-            it::class.java
-        }
-
-        order.forEach { type ->
-            val objectsOfSameType = groupedByClassObjects[type]
-
-            objectsOfSameType?.forEach {
-                getMapper(type).map(it)
-            }
-        }
     }
 }
