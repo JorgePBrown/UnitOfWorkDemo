@@ -9,8 +9,11 @@ class DbContextWithUnitOfWork : AbstractDbContext(), Closeable {
         UnitOfWork.new()
     }
 
-    override fun close() {
+    fun commit() {
         UnitOfWork.current.commit(this)
+    }
+
+    override fun close() {
         UnitOfWork.remove()
     }
 }

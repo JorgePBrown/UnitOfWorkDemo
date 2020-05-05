@@ -24,6 +24,8 @@ class ControllerWithUnitOfWork {
             val klass = classMapper.find(classId)
 
             klass.teacher = teacher
+
+            it.commit()
         }
     }
 }
